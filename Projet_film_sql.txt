@@ -1,0 +1,82 @@
+-- DROP TABLE
+
+DROP TABLE IF EXISTS Jouer;
+DROP TABLE IF EXISTS episode;
+DROP TABLE IF EXISTS season;
+DROP TABLE IF EXISTS serie;
+DROP TABLE IF EXISTS personnes;
+
+-- CREATE TABLE
+
+CREATE TABLE personnes (
+	idpersonnes INTEGER PRIMARY KEY AUTOINCREMENT,
+	name VARCHAR (50),
+	birthYear VARCHAR (20),
+	deathYear VARCHAR (20),
+	job VARCHAR (10)
+);
+
+CREATE TABLE serie (
+	idserie INTEGER PRIMARY KEY AUTOINCREMENT,
+	serie_title VARCHAR (50),
+	genres VARCHAR (50),
+	adult INTEGER   CHECK (adult IN (0,1)),
+	country VARCHAR (100)
+	
+);
+
+CREATE TABLE season (
+	idseason INTEGER PRIMARY KEY AUTOINCREMENT,
+	idserie INTEGER,
+	seasonNumber INTEGER,
+	FOREIGN KEY ( idserie ) REFERENCES serie ( idserie )
+);
+
+CREATE TABLE episode (
+	idepisode INTEGER PRIMARY KEY AUTOINCREMENT,
+	idseason INTEGER,
+	episodeNumber INTEGER,
+	episode_title VARCHAR (50),
+	year INTEGER,
+	runtimeMinutes INTEGER,
+	averageRating REAL,
+	numVotes INTEGER,
+	FOREIGN KEY ( idseason ) REFERENCES season ( idseason )
+);
+
+CREATE TABLE Jouer (
+	idpersonnes INTEGER,
+	idepisode INTEGER,
+	role VARCHAR (50),
+	job VARCHAR (10),
+	FOREIGN KEY ( idpersonnes ) REFERENCES personnes ( idpersonnes ),
+	FOREIGN KEY ( idepisode ) REFERENCES episode ( idepisode )
+);
+
+--INSERT INTO
+
+INSERT INTO serie ( serie_title, genres, adult, country )
+SELECT DISTINCT serie_title, genres, adult, country
+FROM donnees
+WHERE country IS NOT NULL;
+
+INSERT INTO season ( seasonNumber, idserie )
+SELECT seasonNumber, idserie
+FROM serie JOIN donnees ON serie.serie_title = donnees.serie_title;
+
+INSERT INTO episode ( episode_title,episodeNumber, idseason, year, runtimeMinutes, averageRating, numVotes )
+SELECT DISTINCT donnees.episode_title ,season.idseason, donnees.episodeNumber,  donnees.year, donnees.runtimeMinutes, donnees.averageRating, donnees.numVotes
+FROM donnees
+JOIN season ON season.seasonNumber = donnees.seasonNumber
+JOIN serie ON serie.serie_title = donnees.serie_title AND serie.idserie = season.idserie;
+
+INSERT INTO personnes ( name, birthYear, deathYear, job )
+SELECT name, birthYear, deathYear, job
+FROM donnees;
+
+INSERT INTO Jouer ( idpersonnes, idepisode, role, job )
+SELECT personnes.idpersonnes, episode.idepisode, donnees.role, donnees.job
+FROM donnees 
+JOIN personnes ON personnes.name = donnees.name AND personnes.birthYear = donnees.birthYear
+JOIN episode ON episode.episodeNumber = donnees.episodeNumber AND episode.episode_title = donnees.episode_title;
+
